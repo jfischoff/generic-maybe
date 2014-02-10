@@ -99,8 +99,8 @@ fromMaybe' :: a
            -> (U1 :+: Rec0 a) b
            -> a
 fromMaybe' def = \case 
-   L1 U1 -> def
-   R1 (K1 x)     -> x 
+   L1 U1     -> def
+   R1 (K1 x) -> x 
 -- | A generalized version of 'Data.Maybe.maybe' 
 --
 -- > maybe :: b -> (a -> b) -> Maybe a -> Maybe b
