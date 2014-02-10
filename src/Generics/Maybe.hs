@@ -75,32 +75,32 @@ type MaybeLike maybe a d u m b y =
 -- > fromMaybe :: a -> Maybe a -> Maybe a
 --
 -- >>> fromMaybe 'a' Nothing
--- Just 'a'
+-- 'a'
 -- 
 -- >>> fromMaybe 'a' $ Just 'b'
--- Just 'b'
+-- 'b'
 -- 
 -- >>> fromMaybe 'a' Fail
--- Success 'a'
+-- 'a'
 -- 
 -- >>> fromMaybe 'a' $ Success 'b'
--- Success 'b'
+-- 'b'
 -- 
 -- >>> fromMaybe Zero Zero
--- Succ Zero
+-- Zero
 -- 
 -- >>> fromMaybe Zero $ Succ (Succ Zero)
--- Succ (Succ Zero)
+-- Succ Zero
 fromMaybe :: MaybeLike maybe a d u m b y
-          => a -> maybe -> maybe
-fromMaybe x = over gsimple (fromMaybe' x) 
+          => a -> maybe -> a
+fromMaybe x = fromMaybe' x . view gsimple 
 
 fromMaybe' :: a 
            -> (U1 :+: Rec0 a) b
-           -> (U1 :+: Rec0 a) b
+           -> a
 fromMaybe' def = \case 
-   L1 U1 -> R1 $ K1 def
-   x     -> x 
+   L1 U1 -> def
+   R1 (K1 x)     -> x 
 -- | A generalized version of 'Data.Maybe.maybe' 
 --
 -- > maybe :: b -> (a -> b) -> Maybe a -> Maybe b
