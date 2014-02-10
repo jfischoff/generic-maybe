@@ -17,7 +17,7 @@ After which you can use the functions, like your type was 'Maybe'
 
 ```
 λ> fromMaybe 'a' Fail
-Success 'a'
+'a'
 λ> fromMaybe 'a' $ Success 'b'
-Success 'b'
+'b'
 ```
