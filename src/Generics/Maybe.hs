@@ -21,15 +21,14 @@ import GHC.Generics
 {-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE TypeSynonymInstances   #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 module Generics.Maybe 
-   ( MaybeLike
-   , fromMaybe
+   ( fromMaybe
    , maybe
    , isJust
    , isNothing
@@ -39,7 +38,7 @@ module Generics.Maybe
    , catMaybes
    , mapMaybe
    -- * Exported for groking, but not for implementing.
-   , GMaybeLike
+   , MaybeLike
    , G
    ) where
 import GHC.Generics
@@ -63,13 +62,6 @@ import Prelude hiding (maybe)
 -- >>> data Nat = Zero | Succ Nat deriving (Show, Generic)
 -- >>> data Result a = Success a | Fail deriving (Show, Generic)
 
--- | A constraint synonym to make the type signatures look better.
---   The 'd u m b y' type variables can be ignored.
-type MaybeLike maybe a d u m b y = 
-   ( Generic maybe
-   , GMaybeLike (Rep maybe) (G d u m b y a)
-   )
-
 -- | A generalized version of 'Data.Maybe.fromMaybe'
 --
 -- > fromMaybe :: a -> Maybe a -> Maybe a
@@ -91,7 +83,7 @@ type MaybeLike maybe a d u m b y =
 -- 
 -- >>> fromMaybe Zero $ Succ (Succ Zero)
 -- Succ Zero
-fromMaybe :: MaybeLike maybe a d u m b y
+fromMaybe :: (Generic maybe, MaybeLike (Rep maybe) a)
           => a -> maybe -> a
 fromMaybe x = fromMaybe' x . view gsimple 
 
@@ -122,7 +114,7 @@ fromMaybe' def = \case
 --
 -- >>> maybe (Succ Zero) Succ $ Succ (Succ Zero)
 -- Succ (Succ Zero)
-maybe :: MaybeLike maybe a d u m b' y
+maybe :: (Generic maybe, MaybeLike (Rep maybe) a)
       => b -> (a -> b) -> maybe -> b
 maybe def f = maybe' def f . view gsimple
       
@@ -152,9 +144,10 @@ maybe' def f = \case
 -- 
 -- >>> isJust $ Succ Zero
 -- True
-isJust :: MaybeLike maybe a d u m b y
+isJust :: forall maybe a. 
+          (Generic maybe, MaybeLike (Rep maybe) a)
        => maybe -> Bool
-isJust = isJust' . view gsimple
+isJust = isJust' . view (gsimple :: Iso' maybe ((U1 :+: Rec0 a) p))
 
 isJust' :: (U1 :+: Rec0 a) b -> Bool
 isJust' = \case
@@ -182,9 +175,10 @@ isJust' = \case
 -- 
 -- >>> isNothing $ Succ Zero
 -- False
-isNothing :: MaybeLike maybe a d u m b y
+isNothing :: forall maybe a.
+             (Generic maybe, MaybeLike (Rep maybe) a)
           => maybe -> Bool   
-isNothing = isNothing' . view gsimple
+isNothing = isNothing' . view (gsimple :: Iso' maybe ((U1 :+: Rec0 a) p))
    
 isNothing' :: (U1 :+: Rec0 a) b -> Bool
 isNothing' = \case
@@ -212,7 +206,7 @@ isNothing' = \case
 --
 -- >>> fromJust $ Succ Zero
 -- Zero
-fromJust :: MaybeLike maybe a d u m b y
+fromJust :: (Generic maybe, MaybeLike (Rep maybe) a)
          => maybe -> a   
 fromJust = fromJust' . view gsimple
    
@@ -241,7 +235,7 @@ fromJust' _ = error "Generics.fromJust. You shouldn't really use this."
 --
 -- >>> listToMaybe [] :: Nat
 -- Zero
-listToMaybe :: MaybeLike maybe a d u m b y
+listToMaybe :: (Generic maybe, MaybeLike (Rep maybe) a)
             => [a] -> maybe
 listToMaybe = view (Iso.from gsimple) . listToMaybe' 
    
@@ -271,7 +265,7 @@ listToMaybe' = \case
 -- 
 -- >>> maybeToList Zero
 -- []
-maybeToList :: MaybeLike maybe a d u m b y
+maybeToList :: (Generic maybe, MaybeLike (Rep maybe) a)
             => maybe -> [a]
 maybeToList = maybeToList' . view gsimple
 
@@ -292,7 +286,7 @@ maybeToList' = \case
 --
 -- >>> catMaybes [Succ Zero, Zero, Succ Zero]
 -- [Zero,Zero]
-catMaybes :: MaybeLike maybe a d u m b y
+catMaybes :: (Generic maybe, MaybeLike (Rep maybe) a)
           => [maybe] -> [a]
 catMaybes = catMaybes' . map (view gsimple) 
 
@@ -311,8 +305,8 @@ catMaybes' xs = [x | R1 (K1 x) <- xs]
 -- 
 -- >>> mapMaybe (\x -> if x then Succ Zero else Zero) [True, False, True]
 -- [Zero,Zero]
-mapMaybe :: MaybeLike maybe a' d u m b y
-         => (a -> maybe) -> [a] -> [a']
+mapMaybe :: (Generic maybe, MaybeLike (Rep maybe) b)
+         => (a -> maybe) -> [a] -> [b]
 mapMaybe f = mapMaybe' (view gsimple . f) 
 
 mapMaybe' :: (a -> (U1 :+: Rec0 b) x) -> [a] -> [b]
@@ -338,34 +332,19 @@ commuteSum :: (f :+: g) p -> (g :+: f) p
 commuteSum = \case 
    L1 x -> R1 x
    R1 x -> L1 x
+      
+-- | This class is used internally to get the GHC.Generic Rep into 
+--   a uniform form.
+--   There are only two instances and no more should be made
+class MaybeLike rep any | rep -> any where
+  maybelike :: Iso' (rep p) ((U1 :+: Rec0 any) p)
+      
+instance MaybeLike (G m a y b e any) any  where
+  maybelike = clean
 
--- | This type class is used to swap the order of constructors so
---   unit shows up first.
---
--- > (M1 m a (C1 b (S1 e (Rec0 any)) :+: C1 y U1)) 
---
--- will become
--- 
--- > (M1 m a (C1 y U1 :+: C1 b (S1 e (Rec0 any))))
--- 
---   and
--- 
--- > (M1 m a (C1 y U1 :+: C1 b (S1 e (Rec0 any))))
--- 
--- is unchanged
--- 
--- Thus, there are only two instances and should only be, forever
--- and always ... I think.
-class GMaybeLike f g | f -> g where
-   gmaybelike :: Iso' (f p) (g p)
-   
-instance GMaybeLike (G m a y b e any) (G m a y b e any) where
-   gmaybelike = iso id id 
-
--- commute :+: 
-instance GMaybeLike (M1 m a (C1 b (S1 e (Rec0 any)) :+: C1 y U1)) 
-                    (G m a y b e any) where
-   gmaybelike = iso invo invo where
+instance MaybeLike (M1 m a (C1 b (S1 e (Rec0 any)) :+: C1 y U1)) any where
+  maybelike = iso invo invo . clean
+    where
       invo = over m1 commuteSum
 
 -- Get rid of all the meta info
@@ -383,7 +362,7 @@ clean = iso fw bk where
 
 -- Convert to the simplified generic form
 gsimple :: ( Generic maybe
-           , GMaybeLike (Rep maybe) (G m a y b e any)
+           , MaybeLike (Rep maybe) any
            )
         => Iso' maybe ((U1 :+: Rec0 any) p)
-gsimple = generic . gmaybelike . clean 
+gsimple = generic . maybelike 
