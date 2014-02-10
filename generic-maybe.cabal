@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                generic-maybe
-version:             0.1.0.1
+version:             0.1.1.0
 synopsis:            A generic version of Data.Maybe
 description:
  This module is a drop in replacement for 'Data.Maybe'. It generalizes
@@ -20,10 +20,10 @@ description:
  After which you can use the functions, like your type was 'Data.Maybe.Maybe'
  .
  >> fromMaybe 'a' Fail
- >Success 'a'
+ >'a'
  . 
  >> fromMaybe 'a' $ Success 'b'
- >Success 'b'
+ >'b'
 homepage:            https://github.com/jfischoff/generic-maybe
 license:             BSD3
 license-file:        LICENSE
