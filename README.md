@@ -1,5 +1,5 @@
 This module is a drop in replacement for 'Maybe'. It generalizes
-the functions to any types that share the same \"sum of products\" view
+the functions to any types that share the same "sum of products" view
 of 'Maybe'.
 
 To use the module for you type, enable GHC's DeriveGeneric extension and
