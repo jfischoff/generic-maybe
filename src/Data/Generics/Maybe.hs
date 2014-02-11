@@ -18,9 +18,7 @@ import GHC.Generics
  After which you can use the function, like your type was 'Data.Maybe.Maybe'
 -}
 {-# LANGUAGE TypeOperators          #-}
-{-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE TypeSynonymInstances   #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FunctionalDependencies #-}

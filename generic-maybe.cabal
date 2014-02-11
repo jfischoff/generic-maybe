@@ -49,9 +49,7 @@ flag test-hlint
 library
   exposed-modules : Data.Generics.Maybe 
   
-  other-extensions: DeriveGeneric
-                  , TypeFamilies
-                  , TypeOperators
+  other-extensions: TypeOperators
                   , MultiParamTypeClasses
                   , FunctionalDependencies
                   , FlexibleContexts
