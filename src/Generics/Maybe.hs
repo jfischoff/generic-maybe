@@ -19,7 +19,6 @@ import GHC.Generics
 -}
 {-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE TypeOperators          #-}
-{-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE TypeSynonymInstances   #-}
@@ -39,17 +38,17 @@ module Generics.Maybe
    , mapMaybe
    -- * Exported for groking, but not for implementing.
    , MaybeLike
-   , G
    ) where
 import GHC.Generics
-    ( Generic(..),
-      U1(..),
-      K1(K1),
-      M1(..),
-      type (:+:)(..),
-      Rec0,
-      C1,
-      S1 )
+    ( Generic(..)
+    , U1(..)
+    , K1(K1)
+    , M1(..)
+    , type (:+:)(..)
+    , Rec0
+    , C1
+    , S1 
+    )
 import Control.Lens ( Iso', Iso, over, iso, view )
 import Generics.Deriving.Lens ( generic )
 import qualified Control.Lens.Iso as Iso
@@ -90,7 +89,7 @@ fromMaybe x = fromMaybe' x . view gsimple
 fromMaybe' :: a 
            -> (U1 :+: Rec0 a) b
            -> a
-fromMaybe' def = \case 
+fromMaybe' def e = case e of 
    L1 U1     -> def
    R1 (K1 x) -> x 
 -- | A generalized version of 'Data.Maybe.maybe' 
@@ -119,7 +118,7 @@ maybe :: (Generic maybe, MaybeLike (Rep maybe) a)
 maybe def f = maybe' def f . view gsimple
       
 maybe' :: b -> (a -> b) -> (U1 :+: Rec0 a) x -> b
-maybe' def f = \case
+maybe' def f e = case e of
    L1 U1     -> def
    R1 (K1 x) -> f x 
 
@@ -150,7 +149,7 @@ isJust :: forall maybe a.
 isJust = isJust' . view (gsimple :: Iso' maybe ((U1 :+: Rec0 a) p))
 
 isJust' :: (U1 :+: Rec0 a) b -> Bool
-isJust' = \case
+isJust' e = case e of
    L1 {} -> False
    R1 {} -> True
 
@@ -181,7 +180,7 @@ isNothing :: forall maybe a.
 isNothing = isNothing' . view (gsimple :: Iso' maybe ((U1 :+: Rec0 a) p))
    
 isNothing' :: (U1 :+: Rec0 a) b -> Bool
-isNothing' = \case
+isNothing' e = case e of
    L1 {} -> True
    R1 {} -> False
 
@@ -240,7 +239,7 @@ listToMaybe :: (Generic maybe, MaybeLike (Rep maybe) a)
 listToMaybe = view (Iso.from gsimple) . listToMaybe' 
    
 listToMaybe' :: [a] -> (U1 :+: Rec0 a) b
-listToMaybe' = \case
+listToMaybe' e = case e of
    x:_ -> R1 $ K1 x
    []  -> L1 U1
 
@@ -270,7 +269,7 @@ maybeToList :: (Generic maybe, MaybeLike (Rep maybe) a)
 maybeToList = maybeToList' . view gsimple
 
 maybeToList' :: (U1 :+: Rec0 a) b -> [a]
-maybeToList' = \case
+maybeToList' e = case e of
    L1 {}     -> []
    R1 (K1 x) -> [x]
 
@@ -320,16 +319,11 @@ mapMaybe' f (x:xs) =
 --                               Utils
 -------------------------------------------------------------------------------
 
--- | A silly type synonym to make the signatures look better.
---   None of the type variables matter except @any@.
--- Read @G@eneric maybe
-type G m a y b e any = M1 m a (C1 y U1 :+: C1 b (S1 e (Rec0 any)))
-
 m1 :: Iso (M1 i c f p) (M1 i' c' f' p') (f p) (f' p')
 m1 = iso unM1 M1
 
 commuteSum :: (f :+: g) p -> (g :+: f) p
-commuteSum = \case 
+commuteSum e = case e of
    L1 x -> R1 x
    R1 x -> L1 x
       
@@ -339,7 +333,7 @@ commuteSum = \case
 class MaybeLike rep any | rep -> any where
   maybelike :: Iso' (rep p) ((U1 :+: Rec0 any) p)
       
-instance MaybeLike (G m a y b e any) any  where
+instance MaybeLike (M1 m a (C1 y U1 :+: C1 b (S1 e (Rec0 any)))) any  where
   maybelike = clean
 
 instance MaybeLike (M1 m a (C1 b (S1 e (Rec0 any)) :+: C1 y U1)) any where
@@ -348,15 +342,15 @@ instance MaybeLike (M1 m a (C1 b (S1 e (Rec0 any)) :+: C1 y U1)) any where
       invo = over m1 commuteSum
 
 -- Get rid of all the meta info
-clean :: Iso (G m a y b e any p)
-             (G m' a' y' b' e' any' p')
+clean :: Iso ((M1 m a (C1 y U1 :+: C1 b (S1 e (Rec0 any)))) p)
+             ((M1 m' a' (C1 y' U1 :+: C1 b' (S1 e' (Rec0 any')))) p')
              ((U1 :+: Rec0 any) p)
              ((U1 :+: Rec0 any') p')
 clean = iso fw bk where
    fw (M1 x) = case x of
             L1 (M1 l)      -> L1 l
             R1 (M1 (M1 r)) -> R1 r
-   bk = \case
+   bk e = case e of
             L1 l -> M1 $ L1 $ M1 $ l
             R1 r -> M1 $ R1 $ M1 $ M1 $ r
 
