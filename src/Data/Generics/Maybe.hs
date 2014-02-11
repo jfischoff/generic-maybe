@@ -46,9 +46,6 @@ import GHC.Generics
     , C1
     , S1 
     )
-import Control.Lens ( Iso', Iso, over, iso, view )
-import Generics.Deriving.Lens ( generic )
-import qualified Control.Lens.Iso as Iso
 import Prelude hiding (maybe)
 
 -- DocTest setup
@@ -81,7 +78,7 @@ import Prelude hiding (maybe)
 -- Succ Zero
 fromMaybe :: (Generic maybe, MaybeLike (Rep maybe) a)
           => a -> maybe -> a
-fromMaybe x = fromMaybe' x . view gsimple 
+fromMaybe x = fromMaybe' x . toGSimple 
 
 fromMaybe' :: a 
            -> (U1 :+: Rec0 a) b
@@ -112,7 +109,7 @@ fromMaybe' def e = case e of
 -- Succ (Succ Zero)
 maybe :: (Generic maybe, MaybeLike (Rep maybe) a)
       => b -> (a -> b) -> maybe -> b
-maybe def f = maybe' def f . view gsimple
+maybe def f = maybe' def f . toGSimple
       
 maybe' :: b -> (a -> b) -> (U1 :+: Rec0 a) x -> b
 maybe' def f e = case e of
@@ -143,7 +140,7 @@ maybe' def f e = case e of
 isJust :: forall maybe a. 
           (Generic maybe, MaybeLike (Rep maybe) a)
        => maybe -> Bool
-isJust = isJust' . view (gsimple :: Iso' maybe ((U1 :+: Rec0 a) p))
+isJust = isJust' . (toGSimple :: maybe -> (U1 :+: Rec0 a) p)
 
 isJust' :: (U1 :+: Rec0 a) b -> Bool
 isJust' e = case e of
@@ -174,7 +171,7 @@ isJust' e = case e of
 isNothing :: forall maybe a.
              (Generic maybe, MaybeLike (Rep maybe) a)
           => maybe -> Bool   
-isNothing = isNothing' . view (gsimple :: Iso' maybe ((U1 :+: Rec0 a) p))
+isNothing = isNothing' . (toGSimple :: maybe -> (U1 :+: Rec0 a) p)
    
 isNothing' :: (U1 :+: Rec0 a) b -> Bool
 isNothing' e = case e of
@@ -204,7 +201,7 @@ isNothing' e = case e of
 -- Zero
 fromJust :: (Generic maybe, MaybeLike (Rep maybe) a)
          => maybe -> a   
-fromJust = fromJust' . view gsimple
+fromJust = fromJust' . toGSimple
    
 fromJust' :: (U1 :+: Rec0 a) b -> a
 fromJust' (R1 (K1 x)) = x
@@ -233,7 +230,7 @@ fromJust' _ = error "Generics.fromJust. You shouldn't really use this."
 -- Zero
 listToMaybe :: (Generic maybe, MaybeLike (Rep maybe) a)
             => [a] -> maybe
-listToMaybe = view (Iso.from gsimple) . listToMaybe' 
+listToMaybe = fromGSimple . listToMaybe' 
    
 listToMaybe' :: [a] -> (U1 :+: Rec0 a) b
 listToMaybe' e = case e of
@@ -263,7 +260,7 @@ listToMaybe' e = case e of
 -- []
 maybeToList :: (Generic maybe, MaybeLike (Rep maybe) a)
             => maybe -> [a]
-maybeToList = maybeToList' . view gsimple
+maybeToList = maybeToList' . toGSimple
 
 maybeToList' :: (U1 :+: Rec0 a) b -> [a]
 maybeToList' e = case e of
@@ -284,7 +281,7 @@ maybeToList' e = case e of
 -- [Zero,Zero]
 catMaybes :: (Generic maybe, MaybeLike (Rep maybe) a)
           => [maybe] -> [a]
-catMaybes = catMaybes' . map (view gsimple) 
+catMaybes = catMaybes' . map toGSimple 
 
 catMaybes' :: [(U1 :+: Rec0 a) b] -> [a]
 catMaybes' xs = [x | R1 (K1 x) <- xs]
@@ -303,7 +300,7 @@ catMaybes' xs = [x | R1 (K1 x) <- xs]
 -- [Zero,Zero]
 mapMaybe :: (Generic maybe, MaybeLike (Rep maybe) b)
          => (a -> maybe) -> [a] -> [b]
-mapMaybe f = mapMaybe' (view gsimple . f) 
+mapMaybe f = mapMaybe' (toGSimple . f) 
 
 mapMaybe' :: (a -> (U1 :+: Rec0 b) x) -> [a] -> [b]
 mapMaybe' _ []     = []
@@ -316,13 +313,25 @@ mapMaybe' f (x:xs) =
 --                               Utils
 -------------------------------------------------------------------------------
 
-m1 :: Iso (M1 i c f p) (M1 i' c' f' p') (f p) (f' p')
-m1 = iso unM1 M1
+commuteInto :: (M1 m a (f :+: g)) p -> (M1 m a (g :+: f)) p
+commuteInto = M1 . commuteSum . unM1
 
 commuteSum :: (f :+: g) p -> (g :+: f) p
 commuteSum e = case e of
    L1 x -> R1 x
    R1 x -> L1 x
+
+toClean :: M1 t t1 (M1 t2 t3 f :+: M1 t4 t5 (M1 t6 t7 (K1 t8 c))) p
+        -> (:+:) f (K1 i c) p
+toClean (M1 x) = case x of
+            L1 (M1 l)           -> L1 l
+            R1 (M1 (M1 (K1 r))) -> R1 $ K1 r
+            
+fromClean :: (:+:) f (K1 t c4) p
+          -> M1 i c (M1 i1 c1 f :+: M1 i2 c2 (M1 i3 c3 (K1 i4 c4))) p
+fromClean e = case e of
+            L1 l      -> M1 $ L1 $ M1 l
+            R1 (K1 r) -> M1 $ R1 $ M1 $ M1 $ K1 r
       
 -- | This type class is used to swap the order of constructors so
 --   unit shows up first.
@@ -342,33 +351,22 @@ commuteSum e = case e of
 -- Thus, there are only two instances and should only be, forever
 -- and always ... I think.
 class MaybeLike rep any | rep -> any where
-  maybelike :: Iso' (rep p) ((U1 :+: Rec0 any) p)
+  toMaybelike   :: rep p -> (U1 :+: Rec0 any) p
+  fromMaybelike :: (U1 :+: Rec0 any) p -> rep p
 
 instance MaybeLike (M1 m a (C1 y U1 :+: C1 b (S1 e (K1 k any)))) any  where
-  maybelike = clean
+  toMaybelike   = toClean
+  fromMaybelike = fromClean
 
 instance MaybeLike (M1 m a (C1 b (S1 e (K1 k any)) :+: C1 y U1)) any where
-  maybelike = iso invo invo . clean
-    where
-      invo = over m1 commuteSum
+  toMaybelike   = toClean . commuteInto
+  fromMaybelike = commuteInto . fromClean
 
--- Get rid of all the meta info
-clean :: Iso ((M1 m  a  (C1 y  U1 :+: C1 b  (S1 e  (K1 k any )))) p)
-             ((M1 m' a' (C1 y' U1 :+: C1 b' (S1 e' (K1 k any')))) p')
-             ((U1 :+: Rec0 any) p)
-             ((U1 :+: Rec0 any') p')
-clean = iso fw bk where
-   fw (M1 x) = case x of
-            L1 (M1 l)           -> L1 l
-            R1 (M1 (M1 (K1 r))) -> R1 $ K1 r
-   bk e = case e of
-            L1 l      -> M1 $ L1 $ M1 l
-            R1 (K1 r) -> M1 $ R1 $ M1 $ M1 $ K1 r
+toGSimple :: (Generic maybe, MaybeLike (Rep maybe) a)
+          => maybe -> (U1 :+: Rec0 a) p
+toGSimple = toMaybelike . from
 
+fromGSimple :: (Generic maybe, MaybeLike (Rep maybe) a)
+            => (U1 :+: Rec0 a) p -> maybe
+fromGSimple = to . fromMaybelike
 
--- Convert to the simplified generic form
-gsimple :: ( Generic maybe
-           , MaybeLike (Rep maybe) any
-           )
-        => Iso' maybe ((U1 :+: Rec0 any) p)
-gsimple = generic . maybelike 

@@ -1,2 +1,2 @@
 :set -i./src -i./tests
-:load src/Generics/Maybe.hs
+:load src/Data/Generics/Maybe.hs
