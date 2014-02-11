@@ -44,7 +44,7 @@ import GHC.Generics
     , U1(..)
     , K1(K1)
     , M1(..)
-    , type (:+:)(..)
+    , (:+:)(..)
     , Rec0
     , C1
     , S1 
@@ -327,32 +327,47 @@ commuteSum e = case e of
    L1 x -> R1 x
    R1 x -> L1 x
       
--- | This class is used internally to get the GHC.Generic Rep into 
---   a uniform form.
---   There are only two instances and no more should be made
+-- | This type class is used to swap the order of constructors so
+--   unit shows up first.
+--
+-- > (M1 m a (C1 b (S1 e (Rec0 any)) :+: C1 y U1)) 
+--
+-- will become
+-- 
+-- > (M1 m a (C1 y U1 :+: C1 b (S1 e (Rec0 any))))
+-- 
+--   and
+-- 
+-- > (M1 m a (C1 y U1 :+: C1 b (S1 e (Rec0 any))))
+-- 
+-- is unchanged
+-- 
+-- Thus, there are only two instances and should only be, forever
+-- and always ... I think.
 class MaybeLike rep any | rep -> any where
   maybelike :: Iso' (rep p) ((U1 :+: Rec0 any) p)
-      
-instance MaybeLike (M1 m a (C1 y U1 :+: C1 b (S1 e (Rec0 any)))) any  where
+
+instance MaybeLike (M1 m a (C1 y U1 :+: C1 b (S1 e (K1 k any)))) any  where
   maybelike = clean
 
-instance MaybeLike (M1 m a (C1 b (S1 e (Rec0 any)) :+: C1 y U1)) any where
+instance MaybeLike (M1 m a (C1 b (S1 e (K1 k any)) :+: C1 y U1)) any where
   maybelike = iso invo invo . clean
     where
       invo = over m1 commuteSum
 
 -- Get rid of all the meta info
-clean :: Iso ((M1 m a (C1 y U1 :+: C1 b (S1 e (Rec0 any)))) p)
-             ((M1 m' a' (C1 y' U1 :+: C1 b' (S1 e' (Rec0 any')))) p')
+clean :: Iso ((M1 m  a  (C1 y  U1 :+: C1 b  (S1 e  (K1 k any )))) p)
+             ((M1 m' a' (C1 y' U1 :+: C1 b' (S1 e' (K1 k any')))) p')
              ((U1 :+: Rec0 any) p)
              ((U1 :+: Rec0 any') p')
 clean = iso fw bk where
    fw (M1 x) = case x of
             L1 (M1 l)      -> L1 l
-            R1 (M1 (M1 r)) -> R1 r
+            R1 (M1 (M1 (K1 r))) -> R1 $ K1 r
    bk e = case e of
-            L1 l -> M1 $ L1 $ M1 $ l
-            R1 r -> M1 $ R1 $ M1 $ M1 $ r
+            L1 l -> M1 $ L1 $ M1 l
+            R1 (K1 r) -> M1 $ R1 $ M1 $ M1 $ K1 $ r
+
 
 -- Convert to the simplified generic form
 gsimple :: ( Generic maybe
