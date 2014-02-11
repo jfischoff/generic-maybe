@@ -8,7 +8,7 @@ derive a Generic instance for your type.
 ```haskell
 {-# LANGUAGE DeriveGeneric #-}
 import GHC.Generics
- 
+
 data Result a = Success a | Fail
     deriving (Show, Generic)
 ```
