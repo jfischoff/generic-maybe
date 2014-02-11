@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                generic-maybe
-version:             0.3.0.0
+version:             0.3.0.1
 synopsis:            A generic version of Data.Maybe
 description:
  This module is a drop in replacement for 'Data.Maybe'. It generalizes
