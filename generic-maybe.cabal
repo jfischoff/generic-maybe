@@ -43,8 +43,8 @@ flag test-doctests
 -- You can disable the hlint test suite with -f-test-hlint
 -- Disabled until the LambdaCase extension is added src-exts
 flag test-hlint
-  default: False
-  manual: False
+  default: True
+  manual: True
   
 library
   exposed-modules:     Generics.Maybe
@@ -105,7 +105,7 @@ test-suite doctests
 test-suite hlint
    type: exitcode-stdio-1.0
    main-is: hlint.hs
-   ghc-options: -w -threaded -rtsopts -with-rtsopts=-N
+--   ghc-options: -w -threaded -rtsopts -with-rtsopts=-N
    hs-source-dirs: tests
    default-language:    Haskell2010
 

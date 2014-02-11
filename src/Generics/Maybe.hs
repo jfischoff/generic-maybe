@@ -17,7 +17,6 @@ import GHC.Generics
  
  After which you can use the function, like your type was 'Data.Maybe.Maybe'
 -}
-{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
@@ -362,11 +361,11 @@ clean :: Iso ((M1 m  a  (C1 y  U1 :+: C1 b  (S1 e  (K1 k any )))) p)
              ((U1 :+: Rec0 any') p')
 clean = iso fw bk where
    fw (M1 x) = case x of
-            L1 (M1 l)      -> L1 l
+            L1 (M1 l)           -> L1 l
             R1 (M1 (M1 (K1 r))) -> R1 $ K1 r
    bk e = case e of
-            L1 l -> M1 $ L1 $ M1 l
-            R1 (K1 r) -> M1 $ R1 $ M1 $ M1 $ K1 $ r
+            L1 l      -> M1 $ L1 $ M1 l
+            R1 (K1 r) -> M1 $ R1 $ M1 $ M1 $ K1 r
 
 
 -- Convert to the simplified generic form
