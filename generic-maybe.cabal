@@ -47,8 +47,8 @@ flag test-hlint
   manual: True
   
 library
-  exposed-modules:     Generics.Maybe
-  -- other-modules:       
+  exposed-modules : Data.Generics.Maybe 
+  
   other-extensions: DeriveGeneric
                   , TypeFamilies
                   , TypeOperators

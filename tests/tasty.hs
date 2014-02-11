@@ -5,7 +5,7 @@ import Test.Tasty
 import Test.Tasty.TH
 import Test.Tasty.HUnit
 import Test.HUnit
-import Generics.Maybe
+import Data.Generics.Maybe
 import Prelude hiding (maybe)
 import GHC.Generics
 import Control.Exception
