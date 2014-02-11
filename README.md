@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/jfischoff/generic-maybe.png?branch=master)](https://travis-ci.org/jfischoff/generic-maybe)
+
 This module is a drop in replacement for 'Maybe'. It generalizes
 the functions to any types that share the same "sum of products" view
 of 'Maybe'.
