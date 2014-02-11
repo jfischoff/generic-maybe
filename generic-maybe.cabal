@@ -125,6 +125,7 @@ test-suite tasty
    build-depends: base
                 , lens          >= 3.10  && < 5.0
                 , ghc-prim
+                , deepseq
                 , tasty         >= 0.7   && < 0.8
                 , tasty-th      >= 0.1.1 && < 0.2
                 , tasty-hunit   >= 0.4.1 && < 0.5

@@ -10,12 +10,22 @@ import Prelude hiding (maybe)
 import GHC.Generics
 import Control.Exception
 import Control.Monad
+import Control.DeepSeq
+
+isLeft x = case x of { Left {} -> True; Right {} -> True }
 
 main :: IO ()
 main = $(defaultMainGenerator)
 
 data Nat = Zero | Succ Nat deriving (Eq, Show, Generic)
+
+instance NFData Nat where
+   rnf x = case x of
+      Zero    -> Zero `seq` ()
+      Succ x  -> x `deepseq` ()
+
 data Result a = Success a | Fail deriving (Eq, Show, Generic)
+
 
 case_fromMaybe_Nothing = fromMaybe 'a' Nothing @?= 'a'
 
@@ -67,9 +77,12 @@ case_isNothing_Zero = isNothing Zero @?= True
 
 case_isNothing_Succ = isNothing (Succ Zero) @?= False
 
-assertException :: Show a => a -> IO ()
-assertException a = handle (\(SomeException e) -> return ())
-                         $ assertFailure $ "Expected exception: " ++ show a 
+assertException :: (NFData a, Show a) => a -> IO ()
+assertException = assertBool "Expected exception: " 
+                . (isLeft :: Either SomeException a -> Bool)  
+                <=< try 
+                . evaluate
+                . force
 
 case_fromJust_Nothing = assertException (fromJust Nothing :: Char)
 
