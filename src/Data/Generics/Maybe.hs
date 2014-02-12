@@ -314,24 +314,28 @@ mapMaybe' f (x:xs) =
 -------------------------------------------------------------------------------
 
 commuteInto :: (M1 m a (f :+: g)) p -> (M1 m a (g :+: f)) p
-commuteInto = M1 . commuteSum . unM1
+commuteInto x = M1 $ commuteSum $ unM1 x
+{-# INLINE commuteInto #-}
 
 commuteSum :: (f :+: g) p -> (g :+: f) p
 commuteSum e = case e of
    L1 x -> R1 x
    R1 x -> L1 x
+{-# INLINE commuteSum #-}
 
 toClean :: M1 t t1 (M1 t2 t3 f :+: M1 t4 t5 (M1 t6 t7 (K1 t8 c))) p
         -> (:+:) f (K1 i c) p
 toClean (M1 x) = case x of
             L1 (M1 l)           -> L1 l
             R1 (M1 (M1 (K1 r))) -> R1 $ K1 r
+{-# INLINE toClean #-}
             
 fromClean :: (:+:) f (K1 t c4) p
           -> M1 i c (M1 i1 c1 f :+: M1 i2 c2 (M1 i3 c3 (K1 i4 c4))) p
 fromClean e = case e of
             L1 l      -> M1 $ L1 $ M1 l
             R1 (K1 r) -> M1 $ R1 $ M1 $ M1 $ K1 r
+{-# INLINE fromClean #-}
       
 -- | This type class is used to swap the order of constructors so
 --   unit shows up first.
@@ -356,17 +360,27 @@ class MaybeLike rep any | rep -> any where
 
 instance MaybeLike (M1 m a (C1 y U1 :+: C1 b (S1 e (K1 k any)))) any  where
   toMaybelike   = toClean
+  {-# INLINE toMaybelike #-}
+--  {-# SPECIALIZE toMaybelike :: (M1 m a (C1 y U1 :+: C1 b (S1 e (K1 k any)))) p -> (U1 :+: Rec0 any) p #-}
   fromMaybelike = fromClean
+  {-# INLINE fromMaybelike #-}
+--  {-# SPECIALIZE fromMaybelike :: (U1 :+: Rec0 any) p -> (M1 m a (C1 y U1 :+: C1 b (S1 e (K1 k any)))) p #-}
 
 instance MaybeLike (M1 m a (C1 b (S1 e (K1 k any)) :+: C1 y U1)) any where
   toMaybelike   = toClean . commuteInto
+  {-# INLINE toMaybelike #-}
+--  {-# SPECIALIZE toMaybelike :: (M1 m a (C1 b (S1 e (K1 k any)) :+: C1 y U1)) p -> (U1 :+: Rec0 any) p #-}
   fromMaybelike = commuteInto . fromClean
+  {-# INLINE fromMaybelike #-}
+--  {-# SPECIALIZE fromMaybelike :: (U1 :+: Rec0 any) p ->(M1 m a (C1 b (S1 e (K1 k any)) :+: C1 y U1)) p #-}
 
 toGSimple :: (Generic maybe, MaybeLike (Rep maybe) a)
           => maybe -> (U1 :+: Rec0 a) p
 toGSimple = toMaybelike . from
+{-# INLINE toGSimple #-}
 
 fromGSimple :: (Generic maybe, MaybeLike (Rep maybe) a)
             => (U1 :+: Rec0 a) p -> maybe
 fromGSimple = to . fromMaybelike
+{-# INLINE fromGSimple #-}
 
