@@ -1,0 +1,8 @@
+Changelog for generic-maybe
+
+0.3.0.2
+    #15, Test functions against Data.Maybe
+    #14, Benchmark infrastructure added
+    #13, Change log added
+    #9,  Convert function added
+     
