@@ -11,6 +11,7 @@ import GHC.Generics
 import Control.Exception
 import Control.Monad
 import Control.DeepSeq
+import qualified Data.Maybe as M
 
 isLeft x = case x of { Left {} -> True; Right {} -> True }
 
@@ -140,5 +141,44 @@ case_mapMaybe_Result
 case_mapMaybe_Nat 
    = mapMaybe (\x -> if x then Succ Zero else Zero) [True, False, True]
  @?= [Zero,Zero]
+
+-- Check against Data.Maybe
+case_fromMaybe_Ref_Nothing = 
+   fromMaybe 'a' Nothing @?= M.fromMaybe 'a' Nothing
+
+case_fromMaybe_Ref_Just = 
+   fromMaybe 'a' (Just 'b') @?= M.fromMaybe 'a' (Just 'b')
+
+case_maybe_Ref_Nothing =
+   maybe (1 :: Int) (+1) Nothing @?= M.maybe (1 :: Int) (+1) Nothing
+
+case_maybe_Ref_Just =
+   maybe (1 :: Int) (+1) (Just 1) @?= M.maybe (1 :: Int) (+1) (Just 1)
+
+case_listToMaybe_Ref_Empty =
+   listToMaybe ([] :: [Char]) @?= M.listToMaybe [] 
+
+case_listToMaybe_Ref_NonEmpty = 
+   listToMaybe ['a', 'b'] @?= M.listToMaybe ['a', 'b']
+
+case_maybeToList_Ref_Nothing =
+   maybeToList (Nothing :: Maybe Char) @?= M.maybeToList Nothing
+
+case_maybeToList_Ref_Just = 
+   maybeToList (Just 'a') @?= M.maybeToList (Just 'a')
+   
+case_catMaybes_Ref 
+    = catMaybes [Just 'a', Nothing, Just 'b'] 
+  @?= M.catMaybes [Just 'a', Nothing, Just 'b'] 
+   
+case_mapMaybe_Ref 
+    = mapMaybe (\x -> if x then Just "True" else Nothing) [True, False, True]
+  @?= M.mapMaybe (\x -> if x then Just "True" else Nothing) [True, False, True]
+
+
+
+
+
+
 
 
