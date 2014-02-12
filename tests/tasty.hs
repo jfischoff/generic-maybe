@@ -142,6 +142,15 @@ case_mapMaybe_Nat
    = mapMaybe (\x -> if x then Succ Zero else Zero) [True, False, True]
  @?= [Zero,Zero]
 
+case_convert_Just
+   = convert (Just 'a') @?= Success 'a'
+
+case_convert_Success 
+   = convert (Success 'a') @?= Just 'a'
+
+case_convert_Nat 
+   = convert (Success Zero) @?= Succ Zero
+
 -- Check against Data.Maybe
 case_fromMaybe_Ref_Nothing = 
    fromMaybe 'a' Nothing @?= M.fromMaybe 'a' Nothing

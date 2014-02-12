@@ -24,7 +24,8 @@ import GHC.Generics
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
 module Data.Generics.Maybe 
-   ( fromMaybe
+   ( -- * Data.Maybe Functions
+     fromMaybe
    , maybe
    , isJust
    , isNothing
@@ -33,6 +34,8 @@ module Data.Generics.Maybe
    , maybeToList
    , catMaybes
    , mapMaybe
+     -- * Convert between Maybelikes
+   , convert
    -- * Exported for groking, but not for implementing.
    , MaybeLike
    ) where
@@ -309,6 +312,24 @@ mapMaybe' f (x:xs) =
    case f x of
      L1 {}     -> ys
      R1 (K1 y) -> y:ys
+     
+-------------------------------------------------------------------------------
+--                               Utils
+-------------------------------------------------------------------------------
+-- | Convert between two Maybelikes
+--
+-- >>> convert (Just 'a') :: Result Char
+-- Success 'a'
+-- 
+-- >>> convert (Success 'a') :: Maybe Char
+-- Just 'a'
+-- 
+-- >>> convert (Success Zero) :: Nat
+-- Succ Zero
+convert :: (Generic maybe1, MaybeLike (Rep maybe1) a, Generic maybe2, MaybeLike (Rep maybe2) a)
+        => maybe1 -> maybe2
+convert = to . fromMaybelike . toMaybelike . from
+
 -------------------------------------------------------------------------------
 --                               Utils
 -------------------------------------------------------------------------------
