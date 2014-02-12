@@ -2,7 +2,7 @@
  the functions to any types that share the same \"sum of products\" view
  of 'Data.Maybe.Maybe'.
  
- To use the module for you type, enable GHC's DeriveGeneric extension and
+ To use the module for your type, enable GHC's DeriveGeneric extension and
  derive a Generic instance for your type.
  
  @

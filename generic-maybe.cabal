@@ -2,14 +2,14 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                generic-maybe
-version:             0.3.0.2
+version:             0.3.0.3
 synopsis:            A generic version of Data.Maybe
 description:
  This module is a drop in replacement for 'Data.Maybe'. It generalizes
  the functions to any types that share the same \"sum of products\" view
  of 'Maybe'.
  .
- To use the module for you type, enable GHC's DeriveGeneric extension and
+ To use the module for your type, enable GHC's DeriveGeneric extension and
  derive a Generic instance for your type.
  .
  > import GHC.Generics
