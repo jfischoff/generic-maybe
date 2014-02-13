@@ -49,3 +49,4 @@ tags
 *.prof
 .cabal-sandbox/
 cabal.sandbox.config
+benchmarks/CoreTest
