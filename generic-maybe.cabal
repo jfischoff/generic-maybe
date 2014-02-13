@@ -63,7 +63,7 @@ library
   default-language:    Haskell2010
   
   ghc-options: -Wall
-  
+
 test-suite doctests
   type:           exitcode-stdio-1.0
   main-is:        doctests.hs
@@ -98,7 +98,7 @@ test-suite doctests
 
   if impl(ghc<7.6.1)
     ghc-options: -Werror
-    
+
 test-suite hlint
    type: exitcode-stdio-1.0
    main-is: hlint.hs
@@ -112,21 +112,7 @@ test-suite hlint
      build-depends:
        base,
        hlint >= 1.7
-       
-test-suite tasty
-   type: exitcode-stdio-1.0
-   main-is: tasty.hs
-   hs-source-dirs: tests, src
-   default-language: Haskell2010
-   
-   build-depends: base
-                , ghc-prim
-                , deepseq
-                , tasty         >= 0.7   && < 0.8
-                , tasty-th      >= 0.1.1 && < 0.2
-                , tasty-hunit   >= 0.4.1 && < 0.5
-                , HUnit         >= 1.2   && < 1.3
-   
+
 benchmark bench-builder-all
   type:             exitcode-stdio-1.0
   hs-source-dirs:   src, benchmarks
